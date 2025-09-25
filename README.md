@@ -1,0 +1,2 @@
+# homework_watermark2
+本应用功能是为图片添加拍摄日期水印
