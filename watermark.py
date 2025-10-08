@@ -407,11 +407,9 @@ class WatermarkApp(QMainWindow):
         # 创建图片副本
         watermarked_image = image.copy()
         
-        # 如果是RGBA模式，转换为RGB模式（除非是PNG格式输出）
-        if watermarked_image.mode == 'RGBA' and (self.output_format == 'JPEG' or (preview and self.output_format == 'JPEG')):
-            background = Image.new('RGB', watermarked_image.size, (255, 255, 255))
-            background.paste(watermarked_image, mask=watermarked_image.split()[3])
-            watermarked_image = background
+        # 确保图像是RGBA模式以便支持透明度
+        if watermarked_image.mode != 'RGBA':
+            watermarked_image = watermarked_image.convert('RGBA')
         
         # 创建绘图对象
         draw = ImageDraw.Draw(watermarked_image, 'RGBA')
@@ -426,7 +424,7 @@ class WatermarkApp(QMainWindow):
             # 如果加载失败，使用默认字体
             font = ImageFont.load_default()
         
-        # 计算水印位置
+        # 计算水印位置（保持原代码不变）
         if self.watermark_position.isNull() or (self.watermark_position.x() == 0 and self.watermark_position.y() == 0):
             # 默认位置：右下角
             # 获取文本尺寸（使用textbbox替代textsize）
@@ -457,8 +455,15 @@ class WatermarkApp(QMainWindow):
             position = (x, y)
         
         # 绘制文本水印
-        opacity = int(255 * (1 - self.text_opacity / 100))
+        # 透明度计算公式
+        opacity = int(255 * (1-self.text_opacity / 100))  # 正确的计算公式
         draw.text(position, self.watermark_text, font=font, fill=(255, 0, 0, opacity))
+        
+        # 只有在需要时才转换为RGB模式（JPEG格式）
+        if (self.output_format == 'JPEG' or (preview and self.output_format == 'JPEG')):
+            background = Image.new('RGB', watermarked_image.size, (255, 255, 255))
+            background.paste(watermarked_image, mask=watermarked_image.split()[3])
+            watermarked_image = background
         
         return watermarked_image
     
