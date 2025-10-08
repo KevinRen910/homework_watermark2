@@ -416,13 +416,6 @@ class WatermarkApp(QMainWindow):
         # 创建绘图对象
         draw = ImageDraw.Draw(watermarked_image, 'RGBA')
         
-        # 计算水印位置
-        if self.watermark_position.isNull() or (self.watermark_position.x() == 0 and self.watermark_position.y() == 0):
-            # 默认位置：右下角
-            position = (watermarked_image.width - 150, watermarked_image.height - 50)
-        else:
-            position = (self.watermark_position.x(), self.watermark_position.y())
-        
         # 计算字体大小
         font_size = max(12, min(watermarked_image.width, watermarked_image.height) // 20)
         
@@ -432,6 +425,36 @@ class WatermarkApp(QMainWindow):
         except:
             # 如果加载失败，使用默认字体
             font = ImageFont.load_default()
+        
+        # 计算水印位置
+        if self.watermark_position.isNull() or (self.watermark_position.x() == 0 and self.watermark_position.y() == 0):
+            # 默认位置：右下角
+            # 获取文本尺寸（使用textbbox替代textsize）
+            bbox = draw.textbbox((0, 0), self.watermark_text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            # 确保文本不会超出边界
+            position = (watermarked_image.width - text_width - 20, watermarked_image.height - text_height - 20)
+        else:
+            # 从预设位置获取坐标
+            x, y = self.watermark_position.x(), self.watermark_position.y()
+            # 获取文本尺寸（使用textbbox替代textsize）
+            bbox = draw.textbbox((0, 0), self.watermark_text, font=font)
+            text_width = bbox[2] - bbox[0]
+            text_height = bbox[3] - bbox[1]
+            
+            # 检查并纠正文本是否会超出边界
+            # 对于右侧位置
+            if x > watermarked_image.width - text_width - 20:
+                x = watermarked_image.width - text_width - 20
+            # 对于底部位置
+            if y > watermarked_image.height - text_height - 20:
+                y = watermarked_image.height - text_height - 20
+            # 确保位置不为负数
+            x = max(20, x)
+            y = max(20, y)
+            
+            position = (x, y)
         
         # 绘制文本水印
         opacity = int(255 * (1 - self.text_opacity / 100))
@@ -528,26 +551,24 @@ class WatermarkApp(QMainWindow):
             file_path = self.image_paths[self.current_index]
             image = Image.open(file_path)
             
-            # 获取预览标签的缩放因子
-            if self.preview_label.pixmap():
-                pixmap = self.preview_label.pixmap()
-                scale_x = image.width / pixmap.width()
-                scale_y = image.height / pixmap.height()
-                
-                # 根据预设位置计算水印位置
-                if position == "左上":
-                    pos = QPoint(int(20 * scale_x), int(20 * scale_y))
-                elif position == "右上":
-                    pos = QPoint(int((pixmap.width() - 150) * scale_x), int(20 * scale_y))
-                elif position == "左下":
-                    pos = QPoint(int(20 * scale_x), int((pixmap.height() - 50) * scale_y))
-                elif position == "右下":
-                    pos = QPoint(int((pixmap.width() - 150) * scale_x), int((pixmap.height() - 50) * scale_y))
-                elif position == "中心":
-                    pos = QPoint(int((pixmap.width() - 75) * scale_x), int((pixmap.height() - 25) * scale_y))
-                    
-                self.watermark_position = pos
-                self.update_preview()
+            # 直接使用原始图像尺寸计算水印位置
+            width, height = image.width, image.height
+            
+            # 根据预设位置计算水印位置
+            if position == "左上":
+                pos = QPoint(20, 20)
+            elif position == "右上":
+                pos = QPoint(width - 150, 20)
+            elif position == "左下":
+                pos = QPoint(20, height - 50)
+            elif position == "右下":
+                pos = QPoint(width - 150, height - 50)
+            elif position == "中心":
+                pos = QPoint(width // 2 - 75, height // 2 - 25)
+            
+            # 确保无论选择哪个位置，都设置水印位置并更新预览
+            self.watermark_position = pos
+            self.update_preview()
     
     def export_all_images(self):
         if not self.image_paths:

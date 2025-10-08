@@ -1,0 +1,13 @@
+{
+    "watermark_text": "123",
+    "text_opacity": 90,
+    "watermark_position": {
+        "x": 1973,
+        "y": 1511
+    },
+    "output_format": "PNG",
+    "output_folder": "D:/workspace/pictures",
+    "file_naming_rule": "suffix",
+    "custom_prefix": "wm_",
+    "custom_suffix": "_watermarked"
+}
